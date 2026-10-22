@@ -1,0 +1,16 @@
+# The sealed material NEVER goes in git until a probe is revealed.
+# Case plaintexts + types, recordings, and any scorer-reachable key stay local.
+sealed/
+*.sealed.json
+*-recordings-*.md
+*-recordings-*.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
