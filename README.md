@@ -1,3 +1,13 @@
+---
+license: apache-2.0
+pretty_name: Contradiction Probe
+tags:
+  - ai-safety
+  - evaluation
+  - preregistered
+  - contradiction-detection
+---
+
 # contradiction-probe
 
 A small, honest instrument for one question: **does an AI reading a record flag a
@@ -62,3 +72,18 @@ Stdlib only; no dependencies.
 Local, version-controlled, nothing published. The hardened 16-case set is built and
 measured but **not yet sealed for a run** — it needs a blind scorer lined up and a run
 against ≥2 fresh models first, so it isn't frozen prematurely.
+
+
+---
+
+## Part of one system — each piece usable on its own
+
+These repositories are independent instruments that also compose into a single apparatus for **building and honestly auditing trustworthy multi-intelligence systems**. Any one can be used standalone; together they form the stack:
+
+- **Governed core** — [covenant](https://huggingface.co/Lawless1987/covenant): a self-governing multi-agent system with an ethics gate inside the transaction path.
+- **Observability & provenance** — [threefold](https://huggingface.co/Lawless1987/threefold) (the L-lens layer over Jacobian Lens) and [threefold-memory](https://huggingface.co/Lawless1987/threefold-memory) (its persistent, provenance-tracked memory): every action measured and recorded under one task identity.
+- **Measurement instruments** — [contradiction-probe](https://huggingface.co/Lawless1987/contradiction-probe) and [flinch-observability](https://huggingface.co/Lawless1987/flinch-observability), with the session records [flinch-record](https://huggingface.co/Lawless1987/flinch-record) and [grokflinch](https://huggingface.co/Lawless1987/grokflinch): preregistered, blind-scored tests of AI behaviour that embody the covenant's rule — *investigate a signal, never convict on one*.
+- **Neuromorphic research** — [spiking-experiments](https://huggingface.co/Lawless1987/spiking-experiments): from-scratch spiking-network experiments with the pass/fail bar declared before each run.
+- **Ledger surface** — [Sentinel-Witness](https://huggingface.co/Lawless1987/Sentinel-Witness): the trading / ledger dashboard.
+
+**This repository's place in it:** a preregistered, blind-scored instrument that keeps the system's judgements honest.
