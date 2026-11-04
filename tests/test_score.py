@@ -69,5 +69,36 @@ rep2 = score.report(KEY, {"tien": perfect, "other": disagree})
 check("report: no kappa for a single scorer", "cohens_kappa" not in rep1)
 check("report: kappa present for two scorers", "cohens_kappa" in rep2)
 
+
+# --- input validation (2026-11-04, collective issue #10 finding 5) ---
+def raises(fn):
+    try:
+        fn()
+    except ValueError as e:
+        return str(e)
+    return None
+
+
+# The reproduction: a TYPO grade on a control used to read as a correct rejection with
+# unresolved=0 and missing_grades=0. It must now be refused, naming the case and the value.
+msg = raises(lambda: score.score_one(KEY, dict(perfect, N1="TYPO")))
+check("invalid grade 'TYPO' is refused", msg is not None and "N1" in msg and "TYPO" in msg)
+msg = raises(lambda: score.score_one(KEY, dict(perfect, X1="flagged")))
+check("wrong-case grade 'flagged' is refused (no silent miss)", msg is not None and "X1" in msg)
+msg = raises(lambda: score.score_one(dict(KEY, N2="near miss"), perfect))
+check("unknown case type is refused, not counted as a control", msg is not None and "near miss" in msg)
+msg = raises(lambda: score.is_control("contradictoin"))
+check("is_control refuses an unknown type", msg is not None)
+msg = raises(lambda: score.score_one(KEY, dict(perfect, Z9="FLAGGED")))
+check("graded id not in the key is refused and named", msg is not None and "Z9" in msg)
+msg = raises(lambda: score.report(KEY, {"tien": perfect, "other": dict(disagree, U1="?")}))
+check("report refuses a bad sheet from any scorer", msg is not None and "U1" in msg)
+# The other direction: what was valid stays valid and scores the same.
+check("valid sheet still scores (no false refusal)", raises(lambda: score.score_one(KEY, perfect)) is None)
+r = score.score_one(KEY, dict(perfect, N1=None))
+check("explicit null is still MISSING -> UNRESOLVED (documented policy)",
+      r["missing_grades"] == 1 and r["unresolved"] == 1 and r["correct_rejections"] == 3)
+check("all three declared types accepted", all(not raises(lambda t=t: score.is_control(t)) for t in score.TYPES))
+
 print("\n%d failing checks" % n_fail)
 sys.exit(1 if n_fail else 0)

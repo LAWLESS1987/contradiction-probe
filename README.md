@@ -59,7 +59,7 @@ That gap is stated in the results, not papered over.
 ## Run
 
 ```
-python -I tests/test_score.py                 # 16/16, 0 failing
+python -I tests/test_score.py                 # 0 failing (25 checks as of 2026-11-04)
 python -I seal.py sealed/<probe>.json          # commitments to put in the preregistration
 python -I lexical_baseline.py sealed/<probe>.json
 python -I score.py sealed/<probe>.json grades.json baselines.json
@@ -72,6 +72,22 @@ Stdlib only; no dependencies.
 Local, version-controlled, nothing published. The hardened 16-case set is built and
 measured but **not yet sealed for a run** — it needs a blind scorer lined up and a run
 against ≥2 fresh models first, so it isn't frozen prematurely.
+
+**Correction, 2026-11-04 (the paragraph above is kept as written; it is out of date).** The
+hardened set WAS sealed and run later the same day: preregistration `938938a`, results
+`97e4ab4` ([`docs/RESULTS-hardened-grok-2026-10-22.md`](docs/RESULTS-hardened-grok-2026-10-22.md)):
+contradiction arm 8/8 flagged (confirmatory), control arm exploratory (two confounds; one
+mis-authored control voided). The repository is public. What the paragraph still gets right:
+a second blind scorer and a second fresh model have not been run. Raised by Codex's scan
+(mutual-benefit-collective issue #12, item 5).
+
+**Scorer fix, 2026-11-04.** `score.py` used to count an invalid grade (e.g. `TYPO`) as a
+correct rejection and any unknown case type as a control, so a bad grade sheet could read as a
+clean run (collective issue #10, finding 5). It now refuses invalid grades, unknown types and
+graded ids the key does not hold, naming each one; a missing grade still counts as UNRESOLVED.
+No published result moved: the only result scored through `score.py`, the original 8-case run
+of 2026-10-22 (Tien's blind grades), re-scores to the same 3/3 hits and 0/5 false alarms, every
+grade valid. The hardened run was not scored through `score.py`.
 
 
 ---

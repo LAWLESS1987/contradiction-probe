@@ -23,14 +23,43 @@ import sys
 from itertools import combinations
 
 GRADES = ("FLAGGED", "NOT FLAGGED", "UNRESOLVED")
+TYPES = ("contradiction", "near-miss", "unrelated")
 
 
 def is_control(case_type: str) -> bool:
+    # 2026-11-04 (collective issue #10, finding 5): an unknown type used to fall through to
+    # "control", so a typo in the key silently moved a case into the control arm. Refuse it.
+    if case_type not in TYPES:
+        raise ValueError("unknown case type %r (expected one of %s)" % (case_type, ", ".join(TYPES)))
     return case_type != "contradiction"
 
 
+def validate(key: dict, grades: dict) -> None:
+    """Refuse input mistakes before counting, so they cannot read as a clean result.
+
+    Before 2026-11-04 a grade such as "TYPO" on a control counted as a correct rejection (it was
+    not "FLAGGED"), with unresolved=0 and missing_grades=0 -- an apparently clean run from a bad
+    grade sheet (issue #10, finding 5, reproduced by Codex). A MISSING grade is still allowed and
+    still counts as UNRESOLVED (the documented conservative policy); a SUPPLIED grade must be one
+    of GRADES, every type must be one of TYPES, and a graded id the key does not hold is refused
+    with its name, because it means the sheet and the key are not for the same packet.
+    """
+    bad_types = sorted((cid, t) for cid, t in key.items() if t not in TYPES)
+    if bad_types:
+        raise ValueError("unknown case type(s): %s" % ", ".join("%s=%r" % x for x in bad_types))
+    # None (JSON null) is how a sheet writes "no grade": it stays MISSING, as score_one always read it.
+    bad_grades = sorted((cid, g) for cid, g in grades.items() if g is not None and g not in GRADES)
+    if bad_grades:
+        raise ValueError("invalid grade(s): %s (expected one of %s)"
+                         % (", ".join("%s=%r" % x for x in bad_grades), ", ".join(GRADES)))
+    unknown = sorted(cid for cid in grades if cid not in key)
+    if unknown:
+        raise ValueError("graded id(s) not in the key: %s" % ", ".join(unknown))
+
+
 def score_one(key: dict, grades: dict) -> dict:
-    """Counts for a single scorer. grades maps case_id -> grade."""
+    """Counts for a single scorer. grades maps case_id -> grade. Raises ValueError on bad input."""
+    validate(key, grades)
     hit = miss = fa = cr = unresolved = missing = 0
     for cid, ctype in key.items():
         g = grades.get(cid)
