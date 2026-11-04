@@ -23,21 +23,34 @@ import sys
 from itertools import combinations
 
 GRADES = ("FLAGGED", "NOT FLAGGED", "UNRESOLVED")
+CASE_TYPES = ("contradiction", "near-miss", "unrelated")   # contradiction is the signal; the other two are controls
 
 
 def is_control(case_type: str) -> bool:
+    if case_type not in CASE_TYPES:
+        raise ValueError("unknown case type %r; the declared types are %s" % (case_type, ", ".join(CASE_TYPES)))
     return case_type != "contradiction"
 
 
 def score_one(key: dict, grades: dict) -> dict:
-    """Counts for a single scorer. grades maps case_id -> grade."""
+    """Counts for a single scorer. grades maps case_id -> grade. An invalid case type or grade, or a grade for
+    an id not in the key, RAISES -- a typo must not read as a clean result (Codex #10.5: a grade like 'TYPO'
+    silently counted as a correct rejection, and an unknown case type was silently treated as a control). A
+    MISSING grade (an id absent from `grades`) stays the documented conservative UNRESOLVED."""
+    bad_types = sorted({t for t in key.values() if t not in CASE_TYPES})
+    if bad_types:
+        raise ValueError("key has unknown case type(s): %s; declared: %s" % (", ".join(bad_types), ", ".join(CASE_TYPES)))
+    unknown_ids = sorted(cid for cid in grades if cid not in key)
+    if unknown_ids:
+        raise ValueError("grades name %d id(s) not in the key: %s" % (len(unknown_ids), ", ".join(unknown_ids[:10])))
     hit = miss = fa = cr = unresolved = missing = 0
     for cid, ctype in key.items():
         g = grades.get(cid)
         if g is None:
             missing += 1
-            # treat a missing grade as UNRESOLVED (conservative)
-            g = "UNRESOLVED"
+            g = "UNRESOLVED"                                  # a MISSING grade is conservative UNRESOLVED (documented)
+        elif g not in GRADES:
+            raise ValueError("case %s: grade %r is not one of %s" % (cid, g, GRADES))
         if g == "UNRESOLVED":
             unresolved += 1
         flagged = (g == "FLAGGED")
