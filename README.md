@@ -67,13 +67,32 @@ python -I score.py sealed/<probe>.json grades.json baselines.json
 
 Stdlib only; no dependencies.
 
+## Research-grade checks
+
+```
+python -I research_grade.py                   # self-test, retractions, claims index, manifest: exit 0 only if all hold
+```
+
+`research_grade.py` is one portable file shared across these repositories. It drives each of its checks red and
+green on a synthetic case every run, then checks this repository:
+
+- **Retractions** (`docs/RETRACTED.json`): a withdrawn claim may reappear only with its retraction id within 10 lines.
+  The original wording is kept in `docs/CORRECTIONS.md`.
+- **Claims** (`docs/CLAIMS_INDEX.json`): each headline figure, the exact sentence where it stands, how it is
+  reproduced, and whether it can be. Four of the five figures rest on the sealed case files, which are not in this
+  repository, so they are labelled `not-reproducible-from-repo`. That is said, not hidden.
+- **Manifest** (`MANIFEST.sha256`): every tracked file pinned by its LF-normalized sha256.
+
+What this cannot see: whether a figure is true. It checks that each one is stated where it says, honestly labelled,
+and that nothing withdrawn comes back uncited.
+
 ## Status
 
 Local, version-controlled, nothing published. The hardened 16-case set is built and
 measured but **not yet sealed for a run** — it needs a blind scorer lined up and a run
 against ≥2 fresh models first, so it isn't frozen prematurely.
 
-**Correction, 2026-11-04 (the paragraph above is kept as written; it is out of date).** The
+**Correction, 2026-11-04, CP-NOT-SEALED-2026-11-04 (the paragraph above is kept as written; it is out of date).** The
 hardened set WAS sealed and run later the same day: preregistration `938938a`, results
 `97e4ab4` ([`docs/RESULTS-hardened-grok-2026-10-22.md`](docs/RESULTS-hardened-grok-2026-10-22.md)):
 contradiction arm 8/8 flagged (confirmatory), control arm exploratory (two confounds; one

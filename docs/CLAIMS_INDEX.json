@@ -1,0 +1,56 @@
+{
+ "what": "Each headline figure this repository states, the exact sentence where it stands, how it is reproduced, and whether it can be reproduced from this repository. Checked fail-closed by research_grade.py.",
+ "as_of": "2026-11-07",
+ "claims": [
+  {
+   "id": "CP-K1",
+   "claim": "On the hardened set, the best word-overlap threshold separates contradictions from controls at 75% (chance 50%).",
+   "source": "README.md",
+   "exact": "The hardened set here caps a string-matcher at **75%** (chance is 50%)",
+   "reproduce": "python -I lexical_baseline.py sealed/<probe>.json",
+   "reproduction_status": "not-reproducible-from-repo",
+   "why_not": "The case plaintexts are in sealed/, which is gitignored until a reveal. The preregistration (938938a) commits to per-statement SHA-256s, so a revealed set can be checked against it before re-running.",
+   "limits": "One 16-case set; the cap measures the set's surface solvability, not any model."
+  },
+  {
+   "id": "CP-K2",
+   "claim": "A 3B local model scored 3 hits and 0 false alarms of 8 each on the hardened set.",
+   "source": "README.md",
+   "exact": "On the hardened set it scores 3/8 hits, 0/8 false alarms",
+   "reproduce": "python -I score.py sealed/<probe>.json grades.json baselines.json",
+   "reproduction_status": "not-reproducible-from-repo",
+   "why_not": "The recordings and grades are in sealed/, which is gitignored.",
+   "limits": "One small model, one run; a floor, not a comparison."
+  },
+  {
+   "id": "CP-K3",
+   "claim": "Against the hardened set, Grok Expert flagged all 8 contradictions; the control arm is exploratory.",
+   "source": "README.md",
+   "exact": "contradiction arm 8/8 flagged (confirmatory)",
+   "reproduce": "docs/RESULTS-hardened-grok-2026-10-22.md (record of the run)",
+   "reproduction_status": "not-reproducible-from-repo",
+   "why_not": "The recording and grades are sealed; the run was scored by hand, not through score.py.",
+   "limits": "One model, one blind scorer, one run. Two control-arm confounds; one mis-authored control voided. Record shown in context, so this tests reasoning, not autonomous detection.",
+   "tombstones": ["CP-NOT-SEALED-2026-11-04"]
+  },
+  {
+   "id": "CP-K4",
+   "claim": "The original 8-case run, re-scored through the fixed score.py, gives the same 3 hits and 0 false alarms.",
+   "source": "README.md",
+   "exact": "re-scores to the same 3/3 hits and 0/5 false alarms",
+   "reproduce": "python -I score.py sealed/<probe>.json grades.json baselines.json",
+   "reproduction_status": "not-reproducible-from-repo",
+   "why_not": "The 8-case key and Tien's blind grades are in sealed/, which is gitignored.",
+   "limits": "Shows the scorer fix moved no published result; it is not a new measurement."
+  },
+  {
+   "id": "CP-K5",
+   "claim": "The scorer's both-ways tests run 25 checks with none failing.",
+   "source": "README.md",
+   "exact": "# 0 failing (25 checks as of 2026-11-04)",
+   "reproduce": "python -I tests/test_score.py",
+   "reproduction_status": "custodian-run",
+   "limits": "Tests the scorer on synthetic keys and grades; says nothing about any model."
+  }
+ ]
+}
