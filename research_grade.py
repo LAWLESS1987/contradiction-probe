@@ -1,25 +1,34 @@
 #!/usr/bin/env python3
-"""research_grade.py -- the research-grade checks, one portable file, standard library only (Python 3.9+).
+"""research_grade.py -- an AUDITABILITY BASELINE, one portable file, standard library only (Python 3.9+).
 
     python -I research_grade.py                   # self-test, then every check; exit 0 only if all hold
     python -I research_grade.py --write-manifest  # re-pin every tracked file into MANIFEST.sha256
 
-Ported 2026-11-07 from what the covenant and covenant-satc repositories learned the hard way. Each check
-exists because its absence once let a wrong statement stand:
+Ported 2026-11-07 from what the covenant and covenant-satc repositories learned the hard way. Passing it means a
+repository's claims are auditable -- stated where they say, tied to how they are reproduced, honestly labelled,
+withdrawals guarded -- NOT that its research is valid or reproducible: a repository passes with every figure
+labelled not-reproducible-from-repo, so the run prints the figures by status. Each check exists because its
+absence once let a wrong statement stand:
 
   R1  RETRACTIONS (docs/RETRACTED.json). A withdrawn claim may appear anywhere only if its retraction id is
-      cited within `window` lines. Every pattern must still match inside the record, so no dead regex passes
-      silently, and the scan reports how many files it read against a floor. An empty ledger is allowed: it
-      means nothing has been withdrawn yet, not that the guard is untested -- the self-test drives the guard
-      red and green on a synthetic retraction every run.
+      cited within `window` lines. L1: each pattern fits the verbatim wording it was written for (a typo'd
+      pattern is a dead regex). L2: EACH named record file other than the ledger still holds the wording, so
+      deleting a record breaks the build. (Measured 2026-11-07: covenant's and covenant-satc's R1 counted the
+      ledger itself as a record, so deleting the record files left 87 of 99 and 9 of 9 retractions green; the
+      12 that went red did so only because JSON escaping kept their patterns from matching the ledger's raw
+      text.) The scan reports how many files it read against a floor. An empty ledger is allowed: it means
+      nothing has been withdrawn yet, not that the guard is untested -- the self-test drives the guard red and
+      green on a synthetic retraction every run.
   C1  CLAIMS (docs/CLAIMS_INDEX.json). Each headline claim names its source file and the exact sentence that
       must stand there verbatim, how it is reproduced, and its reproduction status: custodian-run (the author
       ran it), externally-reproduced (someone else did, with evidence named), or not-reproducible-from-repo
       (the data is not shipped -- said, not hidden). Fail-closed: a missing field, a sentence no longer in its
       source, an unknown status, a reproduce script that does not exist, a data file not pinned, or a
       retraction id the ledger does not hold all fail.
-  M1  MANIFEST (MANIFEST.sha256). Every tracked file is pinned by its LF-normalized sha256, so a Windows
-      checkout (CRLF) and a Linux one hash alike. Any change not deliberately re-pinned fails.
+  M1  MANIFEST (MANIFEST.sha256). Every tracked file is pinned by sha256 -- text with CRLF folded to LF, so a
+      Windows checkout and a Linux one hash alike; binary (any NUL byte) raw. Any change not deliberately
+      re-pinned fails. LIMIT: it catches drift nobody recorded, not deliberate change, because whoever edits a
+      file can re-pin it in the same commit; only an anchor outside the repository could catch that.
 
 What this cannot see (rule 9): whether a claim is TRUE. It checks that each claim is stated where it says,
 tied to a way of reproducing it, honestly labelled, and that nothing withdrawn returns uncited. Regex is an
@@ -38,7 +47,7 @@ import subprocess
 import sys
 import tempfile
 
-KIT_VERSION = "1.0.0"
+KIT_VERSION = "1.1.0"
 STATUSES = {"custodian-run", "externally-reproduced", "not-reproducible-from-repo"}
 CLAIM_FIELDS = ("id", "claim", "source", "exact", "reproduction_status", "limits")
 SCAN_EXT = {".md", ".py", ".sh", ".ps1", ".json", ".txt", ".bat", ".html", ".yml", ".yaml", ".js", ".ts"}
@@ -63,8 +72,12 @@ class Report:
 
 
 def lf_sha256(path):
+    """Text (no NUL byte) is hashed with CRLF folded to LF; binary is hashed raw, never rewritten."""
     with open(path, "rb") as fh:
-        return hashlib.sha256(fh.read().replace(b"\r\n", b"\n")).hexdigest()
+        data = fh.read()
+    if b"\0" not in data:
+        data = data.replace(b"\r\n", b"\n")
+    return hashlib.sha256(data).hexdigest()
 
 
 def tracked(root):
@@ -115,17 +128,19 @@ def r1(root, rep):
         rep.check("R1.%s.0 declares patterns, an allow-list and the true statement" % rid,
                   bool(pats) and bool(allow) and bool(r.get("truth")))
         verbatim = r.get("verbatim", [])
-        records = [a for a in allow if a != LEDGER_REL]
+        # The record files: named explicitly in "records", else every allow entry other than the ledger.
+        records = r.get("records") or [a for a in allow if a != LEDGER_REL]
         dead, unrecorded, bad = [], [], []
         for rx in pats:
-            in_record = 0
+            held = {a: False for a in records}
             for rel, text in texts.items():
                 ok_file = any(rel == a or rel.startswith(a) for a in allow)
                 if not rx.search(text):
                     continue
+                for a in records:
+                    if rel == a or rel.startswith(a):
+                        held[a] = True
                 if ok_file:
-                    if rel != LEDGER_REL:
-                        in_record += 1
                     continue
                 lines = text.splitlines()
                 for m in rx.finditer(text):
@@ -136,9 +151,9 @@ def r1(root, rep):
             # pattern fits the verbatim it was written for -- checked as exactly that, nothing more.
             if not any(rx.search(v) for v in verbatim):
                 dead.append(rx.pattern)
-            # L2: a record file other than the ledger, when one is named, must still hold the wording.
-            if records and not in_record:
-                unrecorded.append(rx.pattern)
+            # L2: EACH record file other than the ledger must still hold the wording on its own, so a second
+            # copy cannot hide the deletion of the first.
+            unrecorded += ["%s (not in %s)" % (rx.pattern, a) for a, ok in held.items() if not ok]
         rep.check("R1.%s.L1 every pattern matches the verbatim wording it was written for" % rid,
                   bool(verbatim) and not dead, dead or "no verbatim given")
         rep.check("R1.%s.L2 every pattern still matches a record file other than the ledger (%s)"
@@ -253,6 +268,14 @@ def selftest(rep):
         rep.check("SELF.R1 ...a typo'd pattern that fits no verbatim is a dead regex: red (L1)", fails(r1))
         w("docs/RETRACTED.json", json.dumps({"window": 2, "coverage_floor": 1, "retractions": [entry]}))
         rep.check("SELF.R1 ...restored, green again", not fails(r1))
+        two = dict(entry, allow=entry["allow"] + ["docs/HISTORY.md"])
+        w("docs/HISTORY.md", "Once we wrote: the moon is cheese.\n")
+        w("docs/RETRACTED.json", json.dumps({"window": 2, "coverage_floor": 1, "retractions": [two]}))
+        rep.check("SELF.R1 ...with two record files, both holding it, green", not fails(r1))
+        w("docs/HISTORY.md", "cleaned up\n")
+        rep.check("SELF.R1 ...one of two records losing it is red: a second copy cannot hide the first", fails(r1))
+        w("docs/HISTORY.md", "Once we wrote: the moon is cheese.\n")
+        w("docs/RETRACTED.json", json.dumps({"window": 2, "coverage_floor": 1, "retractions": [entry]}))
         w("docs/RETRACTED.json", json.dumps({"window": 2, "coverage_floor": 1, "retractions": []}))
         rep.check("SELF.R1 ...an empty ledger is green (nothing withdrawn yet)", not fails(r1))
 
@@ -282,6 +305,14 @@ def selftest(rep):
         rep.check("SELF.M1 ...the same file with CRLF line endings is still green", not fails(m1))
         w("data.csv", "a,b\n1,3\n")
         rep.check("SELF.M1 ...one changed byte turns M1 red", fails(m1))
+        w("data.csv", "a,b\n1,2\n")
+        blob = os.path.join(tmp, "blob.bin")
+        with open(blob, "wb") as fh:
+            fh.write(b"\0\x01\r\n\x02")
+        write_manifest(tmp)
+        with open(blob, "wb") as fh:
+            fh.write(b"\0\x01\n\x02")
+        rep.check("SELF.M1 ...a binary file is hashed raw: CRLF -> LF inside it turns M1 red", fails(m1))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -292,14 +323,28 @@ def main(argv):
         print("wrote %s over %d tracked files" % (MANIFEST, write_manifest(root)))
         return 0
     rep = Report()
-    print("research_grade %s -- self-test (each check driven both ways)" % KIT_VERSION)
-    selftest(rep)
-    print("\nR1 retractions")
-    r1(root, rep)
-    print("\nC1 claims")
-    c1(root, rep)
-    print("\nM1 manifest")
-    m1(root, rep)
+    sections = []
+    print("research_grade %s -- auditability baseline, not a verdict on the research" % KIT_VERSION)
+    for name, fn in (("self-test (each check driven both ways)", selftest), ("R1 retractions", lambda r: r1(root, r)),
+                     ("C1 claims", lambda r: c1(root, r)), ("M1 manifest", lambda r: m1(root, r))):
+        print("\n" + name)
+        before, fails_before = len(rep.results), rep.failed
+        fn(rep)
+        sections.append((name.split(" (")[0], len(rep.results) - before, rep.failed - fails_before))
+
+    def jload(rel, key):
+        p = os.path.join(root, rel)
+        return load_json(p).get(key, []) if os.path.isfile(p) else []
+    status = {}
+    for c in jload("docs/CLAIMS_INDEX.json", "claims"):
+        status[c.get("reproduction_status")] = status.get(c.get("reproduction_status"), 0) + 1
+    print("\nWHAT WAS EXAMINED")
+    print("  tracked files: %d; pinned in %s: %d" % (len(tracked(root)), MANIFEST, len(read_manifest(root))))
+    print("  retractions in the ledger: %d" % len(jload("docs/RETRACTED.json", "retractions")))
+    print("  claims indexed: %d -- %s" % (sum(status.values()), ", ".join("%s %d" % kv for kv in sorted(status.items(), key=str)) or "none"))
+    print("  checks by section: %s" % "; ".join("%s %d (%d failed)" % s for s in sections))
+    print("  limit: passing means auditable, not true or reproducible; the manifest catches unrecorded drift, not a"
+          " deliberate re-pin")
     ok = len(rep.results) - rep.failed
     print("\nresearch_grade: %d/%d passed" % (ok, len(rep.results)))
     return 0 if rep.failed == 0 else 1
