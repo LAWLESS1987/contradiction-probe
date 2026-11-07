@@ -67,21 +67,23 @@ python -I score.py sealed/<probe>.json grades.json baselines.json
 
 Stdlib only; no dependencies.
 
-## Research-grade checks
+## Auditability baseline
 
 ```
 python -I research_grade.py                   # self-test, retractions, claims index, manifest: exit 0 only if all hold
 ```
 
-`research_grade.py` is one portable file shared across these repositories. It drives each of its checks red and
-green on a synthetic case every run, then checks this repository:
+`research_grade.py` is one portable file shared across these repositories. Passing it means this repository's claims
+are auditable, not that they are true or reproducible. It drives each of its checks red and green on a synthetic
+case every run, then checks this repository and prints what it examined:
 
 - **Retractions** (`docs/RETRACTED.json`): a withdrawn claim may reappear only with its retraction id within 10 lines.
   The original wording is kept in `docs/CORRECTIONS.md`.
 - **Claims** (`docs/CLAIMS_INDEX.json`): each headline figure, the exact sentence where it stands, how it is
   reproduced, and whether it can be. Four of the five figures rest on the sealed case files, which are not in this
   repository, so they are labelled `not-reproducible-from-repo`. That is said, not hidden.
-- **Manifest** (`MANIFEST.sha256`): every tracked file pinned by its LF-normalized sha256.
+- **Manifest** (`MANIFEST.sha256`): every tracked file pinned by sha256 (text LF-normalized, binary raw). It catches
+  drift nobody recorded, not a deliberate change re-pinned in the same commit.
 
 What this cannot see: whether a figure is true. It checks that each one is stated where it says, honestly labelled,
 and that nothing withdrawn comes back uncited.
