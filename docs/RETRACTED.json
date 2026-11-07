@@ -1,0 +1,17 @@
+{
+ "what": "Claims this repository published and then withdrew. Read by research_grade.py: a withdrawn wording may appear anywhere only if its id is cited within `window` lines; the original wording is kept in docs/CORRECTIONS.md.",
+ "window": 10,
+ "coverage_floor": 8,
+ "expect_dirs": ["docs", "tests"],
+ "retractions": [
+  {
+   "id": "CP-NOT-SEALED-2026-11-04",
+   "claim": "That the hardened 16-case set was built and measured but not yet sealed for a run.",
+   "refuted_by": "The set was sealed and run on 2026-11-04: preregistration 938938a, results 97e4ab4. Raised by Codex's scan, mutual-benefit-collective issue #12, item 5.",
+   "truth": "The hardened set was sealed and run once, against one model (Grok Expert): contradiction arm 8/8 flagged (confirmatory), control arm exploratory. A second blind scorer and a second fresh model have not been run.",
+   "verbatim": ["measured but **not yet sealed for a run**"],
+   "patterns": ["not\\s+yet\\s+sealed\\s+for\\s+a\\s+run"],
+   "allow": ["docs/RETRACTED.json", "docs/CORRECTIONS.md"]
+  }
+ ]
+}

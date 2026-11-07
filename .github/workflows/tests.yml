@@ -13,3 +13,5 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: both-ways scorer tests
         run: python -I tests/test_score.py
+      - name: research-grade checks (self-test, retractions, claims index, manifest)
+        run: python -I research_grade.py
