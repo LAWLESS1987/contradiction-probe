@@ -34,6 +34,27 @@ def is_control(case_type: str) -> bool:
     return case_type != "contradiction"
 
 
+def check_case_types(cases: list) -> None:
+    """Refuse a packet's cases if any carries a type outside TYPES, naming each such case.
+
+    2026-11-14: seal.py and lexical_baseline.py counted every type that was not "contradiction" as a control,
+    so a typo in a type silently changed the seal's counts and the baseline while this scorer refused the same
+    packet. They now call this, so all three read one list of types.
+    """
+    bad = [(c.get("id"), c.get("type")) for c in cases if c.get("type") not in TYPES]
+    if bad:
+        raise ValueError("unknown case type(s): %s (expected one of %s)"
+                         % (", ".join("%s=%r" % x for x in bad), ", ".join(TYPES)))
+
+
+def counted_grade(grades: dict, cid) -> str:
+    """The grade counted for one case. No grade -- the id absent from the sheet, or an explicit null -- counts
+    as UNRESOLVED (the documented conservative policy). score_one and cohens_kappa both read a sheet through
+    this, so they cannot disagree about what a null means."""
+    g = grades.get(cid)
+    return "UNRESOLVED" if g is None else g
+
+
 def validate(key: dict, grades: dict) -> None:
     """Refuse input mistakes before counting, so they cannot read as a clean result.
 
@@ -62,11 +83,10 @@ def score_one(key: dict, grades: dict) -> dict:
     validate(key, grades)
     hit = miss = fa = cr = unresolved = missing = 0
     for cid, ctype in key.items():
-        g = grades.get(cid)
-        if g is None:
+        if grades.get(cid) is None:
             missing += 1
-            # treat a missing grade as UNRESOLVED (conservative)
-            g = "UNRESOLVED"
+        # treat a missing grade as UNRESOLVED (conservative)
+        g = counted_grade(grades, cid)
         if g == "UNRESOLVED":
             unresolved += 1
         flagged = (g == "FLAGGED")
@@ -92,8 +112,13 @@ def score_one(key: dict, grades: dict) -> dict:
 
 
 def cohens_kappa(a: dict, b: dict, ids: list) -> float | None:
-    """3-way (FLAGGED/NOT FLAGGED/UNRESOLVED) Cohen's kappa between two scorers over `ids`."""
-    pairs = [(a.get(i, "UNRESOLVED"), b.get(i, "UNRESOLVED")) for i in ids]
+    """3-way (FLAGGED/NOT FLAGGED/UNRESOLVED) Cohen's kappa between two scorers over `ids`.
+
+    A missing grade and an explicit null are both UNRESOLVED, exactly as score_one counts them. (Before
+    2026-11-14 only the missing one was, so a null on one sheet against an absence on the other read as a
+    disagreement: kappa 0.333 where the two sheets say the same thing.)
+    """
+    pairs = [(counted_grade(a, i), counted_grade(b, i)) for i in ids]
     n = len(pairs)
     if n == 0:
         return None

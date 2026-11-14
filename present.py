@@ -18,6 +18,9 @@ import sys
 def build(sealed_path: str, recordings_path: str, seed: int):
     with open(sealed_path, "r", encoding="utf-8") as fh:
         pkt = json.load(fh)
+    if "record" not in pkt:
+        raise ValueError('the sealed packet has no "record" (the text the respondent was shown), '
+                         "so no scoring packet can be built from it")
     with open(recordings_path, "r", encoding="utf-8") as fh:
         rec = json.load(fh)["responses"]
     stmt = {c["id"]: c["statement"] for c in pkt["cases"]}
@@ -36,7 +39,10 @@ if __name__ == "__main__":
     if len(sys.argv) < 4:
         print("usage: python -I present.py <sealed.json> <recordings.json> <seed> [out_prefix]")
         sys.exit(2)
-    record, packet, code_map = build(sys.argv[1], sys.argv[2], int(sys.argv[3]))
+    try:
+        record, packet, code_map = build(sys.argv[1], sys.argv[2], int(sys.argv[3]))
+    except ValueError as e:                    # a clear message and a non-zero exit, not a traceback; nothing is written
+        sys.exit("present.py: %s" % e)
     prefix = sys.argv[4] if len(sys.argv) >= 5 else "sealed/packet"
     with open(prefix + "-scorer.json", "w", encoding="utf-8") as fh:
         json.dump({"record": record, "items": packet}, fh, indent=2)
