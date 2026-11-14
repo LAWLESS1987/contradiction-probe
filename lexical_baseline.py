@@ -12,8 +12,13 @@ score is only evidence of understanding insofar as it beats this number.
 Stdlib only. Reads a sealed packet JSON: {"withdrawn_claim": str, "cases": [{id,type,statement}]}.
 """
 import json
+import os
 import re
 import sys
+
+# `python -I lexical_baseline.py` leaves this file's folder off the import path; score.py lives beside it.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from score import check_case_types, is_control  # noqa: E402  -- the one list of case types (score.TYPES)
 
 STOP = set("the a an of to and or is was are be been it its as at by for in on with that this not "
            "did does do so but if only than against vs each came before our one that's".split())
@@ -31,12 +36,17 @@ def jaccard(a, b) -> float:
 def analyze(sealed_path: str) -> dict:
     with open(sealed_path, "r", encoding="utf-8") as fh:
         pkt = json.load(fh)
+    if not pkt.get("cases"):
+        raise ValueError("the packet holds no cases, so there is no case set to measure")
+    # A typo'd type used to be counted as a control and moved the baseline with no warning. Refuse it, against
+    # the same list the scorer uses. Raises ValueError naming the case.
+    check_case_types(pkt["cases"])
     wc = toks(pkt["withdrawn_claim"])
     rows = []
     for c in pkt["cases"]:
         rows.append((c["id"], c["type"], jaccard(toks(c["statement"]), wc)))
-    con = [r for r in rows if r[1] == "contradiction"]
-    ctl = [r for r in rows if r[1] != "contradiction"]
+    con = [r for r in rows if not is_control(r[1])]
+    ctl = [r for r in rows if is_control(r[1])]
     vals = sorted(set(r[2] for r in rows))
     best, best_thr = 0.0, None
     cand = [vals[0] - 1] + [(vals[i - 1] + vals[i]) / 2 for i in range(1, len(vals))] + [vals[-1] + 1]
@@ -59,7 +69,10 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("usage: python -I lexical_baseline.py <sealed.json>")
         sys.exit(2)
-    a = analyze(sys.argv[1])
+    try:
+        a = analyze(sys.argv[1])
+    except ValueError as e:                    # a clear message and a non-zero exit, not a traceback
+        sys.exit("lexical_baseline.py: %s" % e)
     print("%-4s %-13s %-8s  %s" % ("id", "type", "J(claim)", ""))
     for cid, typ, j in a["rows"]:
         print("%-4s %-13s %-8.3f" % (cid, typ, j))

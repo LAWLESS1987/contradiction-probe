@@ -9,7 +9,12 @@ Stdlib only.
 """
 import hashlib
 import json
+import os
 import sys
+
+# `python -I seal.py` leaves this file's folder off the import path; score.py lives beside it.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from score import check_case_types, is_control  # noqa: E402  -- the one list of case types (score.TYPES)
 
 
 def sha256_bytes(b: bytes) -> str:
@@ -35,12 +40,15 @@ def commitments(sealed_path: str) -> dict:
     with open(sealed_path, "r", encoding="utf-8") as fh:
         packet = json.load(fh)
     cases = packet["cases"]
+    # A typo'd type used to be counted as a control, so the committed counts could be wrong with no warning.
+    # Refuse it, against the same list the scorer uses. Raises ValueError naming the case.
+    check_case_types(cases)
     return {
         "sealed_packet_sha256": packet_sha,
         "sealed_packet_bytes": nbytes,
         "n_cases": len(cases),
-        "n_contradiction": sum(1 for c in cases if c["type"] == "contradiction"),
-        "n_control": sum(1 for c in cases if c["type"] != "contradiction"),
+        "n_contradiction": sum(1 for c in cases if not is_control(c["type"])),
+        "n_control": sum(1 for c in cases if is_control(c["type"])),
         "statement_sha256_lexicographic": statement_hashes(cases),
     }
 
@@ -54,7 +62,10 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("usage: python -I seal.py <sealed.json> [expected_sha256]")
         sys.exit(2)
-    c = commitments(sys.argv[1])
+    try:
+        c = commitments(sys.argv[1])
+    except ValueError as e:                    # a clear message and a non-zero exit, not a traceback
+        sys.exit("seal.py: %s" % e)
     print(json.dumps(c, indent=2))
     if len(sys.argv) >= 3:
         ok = verify(sys.argv[1], sys.argv[2])
