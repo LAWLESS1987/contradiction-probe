@@ -53,13 +53,15 @@ That gap is stated in the results, not papered over.
 | `present.py` | turn raw recordings into a shuffled, type-blind scoring packet + an operator-only code map |
 | `score.py` | hits / misses / false alarms / correct rejections from a blind scorer's grades + the key; Cohen's kappa for 2+ scorers |
 | `tests/test_score.py` | both-ways tests (a mutant that mis-credits UNRESOLVED turns it red) |
+| `tests/test_packet_tools.py` | both-ways tests for `seal.py`, `lexical_baseline.py` and `present.py`: an unknown case type, a packet with no cases, a packet with no record |
 | `sealed/` | **gitignored** — case plaintexts, types, recordings, code maps. Never committed until a reveal. |
 | `docs/METHOD.md` | the full protocol and the role split that protects the result |
 
 ## Run
 
 ```
-python -I tests/test_score.py                 # 0 failing (25 checks as of 2026-11-04)
+python -I tests/test_score.py                 # 0 failing (32 checks as of 2026-11-14; 25 as of 2026-11-04)
+python -I tests/test_packet_tools.py          # 0 failing (21 checks as of 2026-11-14): seal, baseline, present
 python -I seal.py sealed/<probe>.json          # commitments to put in the preregistration
 python -I lexical_baseline.py sealed/<probe>.json
 python -I score.py sealed/<probe>.json grades.json baselines.json
@@ -120,7 +122,7 @@ These repositories are independent instruments that also compose into a single a
 - **Governed core** — [covenant](https://huggingface.co/Lawless1987/covenant): a self-governing multi-agent system with an ethics gate inside the transaction path.
 - **Observability & provenance** — [threefold](https://huggingface.co/Lawless1987/threefold) (the L-lens layer over Jacobian Lens) and [threefold-memory](https://huggingface.co/Lawless1987/threefold-memory) (its persistent, provenance-tracked memory): every action measured and recorded under one task identity.
 - **Measurement instruments** — [contradiction-probe](https://huggingface.co/Lawless1987/contradiction-probe) and [flinch-observability](https://huggingface.co/Lawless1987/flinch-observability), with the session records [flinch-record](https://huggingface.co/Lawless1987/flinch-record) and [grokflinch](https://huggingface.co/Lawless1987/grokflinch): preregistered, blind-scored tests of AI behaviour that embody the covenant's rule — *investigate a signal, never convict on one*.
-- **Neuromorphic research** — [spiking-experiments](https://huggingface.co/Lawless1987/spiking-experiments): from-scratch spiking-network experiments with the pass/fail bar declared before each run.
+- **Neuromorphic research** — [spiking-experiments](https://huggingface.co/Lawless1987/spiking-experiments): from-scratch spiking-network experiments, each learning experiment with its bar set before it ran.
 - **Ledger surface** — [Sentinel-Witness](https://huggingface.co/Lawless1987/Sentinel-Witness): the trading / ledger dashboard.
 
 **This repository's place in it:** a preregistered, blind-scored instrument that keeps the system's judgements honest.
