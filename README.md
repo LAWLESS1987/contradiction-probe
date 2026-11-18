@@ -53,13 +53,15 @@ That gap is stated in the results, not papered over.
 | `present.py` | turn raw recordings into a shuffled, type-blind scoring packet + an operator-only code map |
 | `score.py` | hits / misses / false alarms / correct rejections from a blind scorer's grades + the key; Cohen's kappa for 2+ scorers |
 | `tests/test_score.py` | both-ways tests (a mutant that mis-credits UNRESOLVED turns it red) |
+| `tests/test_packet_tools.py` | both-ways tests for `seal.py`, `lexical_baseline.py` and `present.py`: an unknown case type, a packet with no cases, a packet with no record |
 | `sealed/` | **gitignored** — case plaintexts, types, recordings, code maps. Never committed until a reveal. |
 | `docs/METHOD.md` | the full protocol and the role split that protects the result |
 
 ## Run
 
 ```
-python -I tests/test_score.py                 # 0 failing (25 checks as of 2026-11-04)
+python -I tests/test_score.py                 # 0 failing (32 checks as of 2026-11-14; 25 as of 2026-11-04)
+python -I tests/test_packet_tools.py          # 0 failing (21 checks as of 2026-11-14): seal, baseline, present
 python -I seal.py sealed/<probe>.json          # commitments to put in the preregistration
 python -I lexical_baseline.py sealed/<probe>.json
 python -I score.py sealed/<probe>.json grades.json baselines.json

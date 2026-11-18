@@ -45,9 +45,9 @@
   },
   {
    "id": "CP-K5",
-   "claim": "The scorer's both-ways tests run 25 checks with none failing.",
+   "claim": "The scorer's both-ways tests run 32 checks with none failing (25 as of 2026-11-04; seven added 2026-11-14).",
    "source": "README.md",
-   "exact": "# 0 failing (25 checks as of 2026-11-04)",
+   "exact": "# 0 failing (32 checks as of 2026-11-14; 25 as of 2026-11-04)",
    "reproduce": "python -I tests/test_score.py",
    "reproduction_status": "custodian-run",
    "limits": "Tests the scorer on synthetic keys and grades; says nothing about any model."
