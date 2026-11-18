@@ -23,7 +23,7 @@ The **clean re-run** specified at the end of `RESULTS-hardened-grok-2026-10-22.m
 |---|---|
 | **Contradictions (hits)** | **8 / 8 flagged** (X1–X8), hit-rate 1.0 |
 | **Controls (false alarms)** | **0 / 7 flagged** (N1, N3, N4, U1, U2, U3, U4), FA-rate 0.0 |
-| correct rejections | 7 / 7 (N4 UNRESOLVED counted conservatively as non-FA) |
+| controls not flagged | 6 / 7 NOT FLAGGED; N4 UNRESOLVED (an abstention on a corrupted input: not a false alarm, and not a correct rejection) |
 | unresolved | 1 (N4 — see confound below) |
 | N2 | **VOID** (authoring error; excluded) |
 
@@ -33,8 +33,9 @@ N3 NF, N4 UNRESOLVED, U1 NF, U2 NF, U3 NF, U4 NF.
 ### Bar (pre-registered — not moved)
 - Success: ≥6/8 contradictions flagged AND ≤1/8 controls flagged AND beat the 75% string-matcher.
 - **Met on all three.** 8/8 hits; 0/7 false alarms; hit-rate 1.0 > 0.75, and Grok caught the
-  0.00–0.04 word-overlap contradictions (X7 the metric-conflation, X8 the two-clause rule) that a
-  surface matcher provably cannot — detection by meaning, not words.
+  0.00–0.04 word-overlap contradictions (X7 the metric-conflation, X8 the two-clause rule) that the
+  pre-registered string-matcher misses at its best threshold. How Grok reached those verdicts is
+  not measured here.
 - Baselines (from prereg): string-matcher best threshold 75% (misses X7, X8); weak 3B 3/8 hits,
   0/8 FA. Grok beats both on the hit side and matches the 3B's clean (zero-FA) control behaviour
   while detecting far more.
@@ -43,8 +44,9 @@ N3 NF, N4 UNRESOLVED, U1 NF, U2 NF, U3 NF, U4 NF.
 
 10-22 was clean on contradictions (8/8) but its **control arm was spoiled** by (a) an
 "accept-as-written" framing and (b) Expert mode **browsing to the public repo**. This run fixes
-both: the reframed question and X-Fast's non-browsing behaviour give a **clean false-alarm
-measurement for the first time: 0/7.** The two controls that 10-22 could not read cleanly —
+both: the reframed question and X-Fast's non-browsing behaviour give the **first false-alarm
+measurement without those two confounds: 0/7 flagged**, with one of the seven (N4) unresolved on
+a corrupted input (below). The two controls that 10-22 could not read cleanly —
 N3 (browsed 30 sources) and U2 (browsed 50 sources, hit `github.com/LAWLESS1987`) — here return
 clean NOT FLAGGED with no web access.
 
@@ -56,11 +58,12 @@ clean NOT FLAGGED with no web access.
 2. **Typing-induced input corruption.** Driving the X web UI, the `type` action intermittently
    dropped characters; the shared RECORD's token "e1hs2" arrived as "e1s2" (confirmed by reading
    the composer directly, and by Grok's own N4 reply distinguishing the two). The record's numbers
-   and keep-rule logic came through intact, so 15/16 verdicts were robust; but **N4** ("e1hs2's
+   and keep-rule logic came through intact in the composer read; but **N4** ("e1hs2's
    total work fell ~47%") broke: Grok found no "e1hs2" in the corrupted record and returned
-   UNRESOLVED. Re-sending reproduces the drop. N4 is reported as corruption-confounded; it is a
-   non-false-alarm either way, so the scored bar is unaffected. A re-run needs a paste path that
-   does not drop characters.
+   UNRESOLVED. Re-sending reproduces the drop. N4 is reported as corruption-confounded. As scored
+   it is not a false alarm; had it been flagged, the control arm would read 1/7, still inside the
+   pre-registered bar. What the uncorrupted input would have returned is not known. A re-run needs
+   a paste path that does not drop characters.
 3. **Model tier.** X exposes only Grok 4.6 Fast; the 10-22 baseline and the grok.com cross-check
    below used Expert. Numbers are not directly equatable across tiers; the bar is absolute.
 
@@ -77,6 +80,11 @@ mislabel the Fast model missed.
 
 Replace N2 with a correctly-true near-miss (new prereg, new hash); add an independent blind scorer
 for a confirmatory run; use a non-dropping input path.
+
+**Wording narrowed 2026-11-18, before this file was merged,** after a non-author read (Codex): the row
+once titled "correct rejections 7 / 7" now separates six NOT FLAGGED from one abstention; "a surface
+matcher provably cannot" became what the pre-registered baseline misses; "clean false-alarm
+measurement" and "15/16 verdicts were robust" were removed. No number changed.
 
 *Respondent conversation ids are in the operator's local X history; raw verdicts recorded in
 `sealed/recordings-grok-x-2026-11-09.json` (gitignored).*
