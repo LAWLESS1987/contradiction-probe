@@ -9,7 +9,7 @@ The **clean re-run** specified at the end of `RESULTS-hardened-grok-2026-10-22.m
   grok.com's shared-account chats. "Fast" is also a non-browsing mode, which implements the
   10-22 spec's fix #1 by construction.
 - **Presentation:** one **fresh X conversation per item** (16 distinct conversation ids), record
-  shown in-context verbatim, no web search. Reframed question per 10-22 spec fix #2: "does the
+  pasted in-context as text (one token arrived corrupted in the composer, see below), no web search. Reframed question per 10-22 spec fix #2: "does the
   STATEMENT contradict the RECORD? Only object if it conflicts" — NOT "accept as written."
   Respondent returned a categorical **VERDICT: FLAGGED / NOT FLAGGED / UNRESOLVED** itself.
 - **Author/presenter/scorer:** Claude. Grading was **transcription of Grok's own categorical
@@ -61,8 +61,9 @@ clean NOT FLAGGED with no web access.
    and keep-rule logic came through intact in the composer read; but **N4** ("e1hs2's
    total work fell ~47%") broke: Grok found no "e1hs2" in the corrupted record and returned
    UNRESOLVED. Re-sending reproduces the drop. N4 is reported as corruption-confounded. As scored
-   it is not a false alarm; had it been flagged, the control arm would read 1/7, still inside the
-   pre-registered bar. What the uncorrupted input would have returned is not known. A re-run needs
+   it is not a false alarm; had it been flagged, the control arm would read 1 flagged of 7: inside
+   the bar read as a count (at most one), above it read as a rate (1/7 is 14.3%; the bar's 1/8 is
+   12.5%). What the uncorrupted input would have returned is not known. A re-run needs
    a paste path that does not drop characters.
 3. **Model tier.** X exposes only Grok 4.6 Fast; the 10-22 baseline and the grok.com cross-check
    below used Expert. Numbers are not directly equatable across tiers; the bar is absolute.
@@ -73,8 +74,8 @@ Before switching to X, a partial run on grok.com (Expert) reproduced the contrad
 one control, consistent with 10-22: X1–X8 all FLAGGED (8/8), N1 NOT FLAGGED (correct reject),
 N2 FLAGGED — and Expert's reasoning **caught the N2 authoring error** ("one run did clear the
 threshold yet was not kept solely because of its few-shot drop"), which X-Fast did not. This both
-corroborates the contradiction arm cross-surface and shows the stronger Expert model catching the
-mislabel the Fast model missed.
+corroborates the contradiction arm cross-surface and shows Expert catching, on this one item, the
+mislabel that Fast missed.
 
 ## Still specified for a future sealed run (unchanged from 10-22)
 
@@ -84,7 +85,9 @@ for a confirmatory run; use a non-dropping input path.
 **Wording narrowed 2026-11-18, before this file was merged,** after a non-author read (Codex): the row
 once titled "correct rejections 7 / 7" now separates six NOT FLAGGED from one abstention; "a surface
 matcher provably cannot" became what the pre-registered baseline misses; "clean false-alarm
-measurement" and "15/16 verdicts were robust" were removed. No number changed.
+measurement" and "15/16 verdicts were robust" were removed. A second read the same day narrowed three
+more: "verbatim" (one token arrived corrupted), the hypothetical about N4 (count against rate), and
+"the stronger Expert model" (one item). No number changed.
 
 *Respondent conversation ids are in the operator's local X history; raw verdicts recorded in
 `sealed/recordings-grok-x-2026-11-09.json` (gitignored).*
